@@ -52,11 +52,12 @@ def get_users():
 @bp.route("/user/login",  methods=["POST"])
 def login():
     data = request.get_json()
+    if not data:
+        return jsonify(status='failed', message="No data sent!")
     user = User.query.filter_by(email=data.get("email")).first()
-    if user:
-        if user.check_password(data.get("password")):
-            user_schema = UserSchema().dump(user)
-            resp = make_response(jsonify(status="success", message="Login Successful!"), data=user_schema.data)
-            resp.set_cookie('auth', user.generate_token())
-            return resp
-    jsonify(status="failed", message="Invalid login details")
+    if user and user.check_password(data.get("password")):
+        user_schema = UserSchema().dump(user)
+        resp = make_response(jsonify(status="success", message="Login Successful!"), data=user_schema.data)
+        resp.set_cookie('auth', user.generate_token())
+        return resp
+    return jsonify(status="failed", message="Invalid login details")
