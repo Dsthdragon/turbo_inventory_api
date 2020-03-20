@@ -57,7 +57,7 @@ def login():
     user = User.query.filter_by(email=data.get("email")).first()
     if user and user.check_password(data.get("password")):
         user_schema = UserSchema().dump(user)
-        resp = make_response(jsonify(status="success", message="Login Successful!"), data=user_schema.data)
+        resp = make_response(jsonify(status="success", message="Login Successful!", data=user_schema.data))
         resp.set_cookie('auth', user.generate_token())
         return resp
     return jsonify(status="failed", message="Invalid login details")
