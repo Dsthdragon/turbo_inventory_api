@@ -1,3 +1,4 @@
+from flask import request
 from sqlalchemy import inspect, event
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import class_mapper
@@ -10,7 +11,7 @@ from datetime import datetime
 
 from config import Config
 
-from sqlalchemy_utils import EncryptedType, ChoiceType
+from sqlalchemy_utils import EncryptedType
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 
 import json
@@ -33,7 +34,6 @@ class RequestStatusType(enum.Enum):
     rejected = 'Rejected'
 
 
-
 ACTION_CREATE = 1
 ACTION_UPDATE = 2
 ACTION_DELETE = 3
@@ -42,18 +42,18 @@ ACTION_DELETE = 3
 class AuditableMixin:
     @staticmethod
     def create_audit(connection, object_type, object_id, action, **kwargs):
-        # if current_user.is_authenticated:
-        #     if current_user.admin:
-        #         audit = AuditLog()
-        #         audit.admin_id = current_user.admin.id
-        #         audit.target_type = object_type
-        #         audit.target_id = object_id
-        #         audit.state_action = action
-        #         audit.state_before = kwargs.get("state_before")
-        #         audit.state_after = kwargs.get("state_after")
-        #         audit.save(connection)
+        user_id = User.decode_token(request.cookies.get('auth'))
+        user = User.query.get(user_id)
+        if user:
+            audit = AuditLog()
+            audit.user_id = user_id
+            audit.target_type = object_type
+            audit.target_id = object_id
+            audit.state_action = action
+            audit.state_before = kwargs.get("state_before")
+            audit.state_after = kwargs.get("state_after")
+            audit.save(connection)
         print("Audited")
-
 
     @classmethod
     def __declare_last__(cls):
@@ -87,7 +87,6 @@ class AuditableMixin:
         """Listen for the `after_delete` event and create an AuditLog entry"""
         state_before = {}
         state_after = {}
-        inspr = inspect(target)
         attrs = class_mapper(target.__class__).column_attrs
         for attr in attrs:
             if attr.key not in ["created", "updated"]:
@@ -107,10 +106,10 @@ class AuditableMixin:
         """Listen for the `after_update` event and create an AuditLog entry with before and after state changes"""
         state_before = {}
         state_after = {}
-        inspr = inspect(target)
+        inspector = inspect(target)
         attrs = class_mapper(target.__class__).column_attrs
         for attr in attrs:
-            hist = getattr(inspr.attrs, attr.key).history
+            hist = getattr(inspector.attrs, attr.key).history
             if hist.has_changes():
                 state_before[attr.key] = get_history(target, attr.key)[2].pop()
                 state_after[attr.key] = getattr(target, attr.key)

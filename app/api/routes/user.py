@@ -1,13 +1,13 @@
 from flask import jsonify, request, current_app, make_response
 
-from app.api import bp
+from app.api import bp, login_required
 
 from app.schemas import *
 from app.models import *
 
 from app import db
 
-
+@login_required
 @bp.route("/user", methods=["POST"])
 def create_user():
     data = request.get_json()
@@ -39,12 +39,23 @@ def create_user():
     db.session.commit()
 
     user = UserSchema().dump(user)
-    return jsonify(status="success", message="Registration SuccessFul", data=user)
+    return jsonify(status="success", message="Registration SuccessFul", data=user.data)
 
 
 @bp.route("/user")
 def get_users():
     user = User.query.all()
     user_schema = UserSchema(many=True, strict=True).dump(user)
-    return jsonify(status="success", message="Roles Found", data=user_schema.data)
+    return jsonify(status="success", message="Users Found", data=user_schema.data)
 
+
+@bp.route("/user/login",  methods=["POST"])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(email=data.get("email")).first()
+    if user.check_password(data.get("password")):
+        user_schema = UserSchema().dump(user)
+        resp = make_response(jsonify(status="success", message="Login Successful!"))
+        resp.set_cookie('auth', user.generate_token())
+        return resp
+    jsonify(status="failed", message="Invalid login details")
