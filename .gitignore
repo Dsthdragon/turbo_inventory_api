@@ -1,0 +1,5 @@
+/venv
+/obj
+/.idea
+/__pycache__
+.flaskenv
