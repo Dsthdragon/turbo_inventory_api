@@ -16,7 +16,6 @@ MarkupSafe==1.1.1
 marshmallow==2.21.0
 marshmallow-enum==1.5.1
 marshmallow-sqlalchemy==0.19.0
-mysql-client==0.0.1
 pycparser==2.20
 PyMySQL==0.9.3
 python-dateutil==2.8.1
