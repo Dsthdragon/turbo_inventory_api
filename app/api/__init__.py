@@ -15,7 +15,7 @@ def login_required(f):
         if not user:
             return jsonify(status="failed", message="Login to continue", isAuth=False)
         return f(*args, **kwargs)
-
     return wrap
 
-from app.api.routes import user
+
+from app.api.routes import user, catalog, audit_log

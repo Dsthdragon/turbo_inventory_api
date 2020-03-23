@@ -67,10 +67,10 @@ class AuditableMixin:
 
         state_before = {}
         state_after = {}
-        inspr = inspect(target)
+        inspector = inspect(target)
         attrs = class_mapper(target.__class__).column_attrs
         for attr in attrs:
-            hist = getattr(inspr.attrs, attr.key).history
+            hist = getattr(inspector.attrs, attr.key).history
             if hist.has_changes():
                 state_after[attr.key] = getattr(target, attr.key)
         target.create_audit(
@@ -221,7 +221,7 @@ class AuditLog(AuditableMixin, db.Model):
 
     def __repr__(self):
         return "<AuditLog %r: %r -> %r>" % (
-            self.admin_id,
+            self.user_id,
             self.target_type,
             self.state_action,
         )
@@ -229,7 +229,7 @@ class AuditLog(AuditableMixin, db.Model):
     def save(self, connection):
         connection.execute(
             self.__table__.insert(),
-            admin_id=self.admin_id,
+            user_id=self.user_id,
             target_type=self.target_type,
             target_id=self.target_id,
             state_action=self.state_action,

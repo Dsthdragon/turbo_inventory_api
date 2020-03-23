@@ -1,4 +1,4 @@
-from flask import jsonify, request, current_app, make_response
+from flask import jsonify, make_response
 
 from app.api import bp, login_required
 
@@ -7,6 +7,11 @@ from app.models import *
 
 from app import db
 
+import re
+
+email_regex = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+
+
 @login_required
 @bp.route("/user", methods=["POST"])
 def create_user():
@@ -14,9 +19,10 @@ def create_user():
 
     if data is None:
         return jsonify(status="failed", message="No Data Sent!")
-
     if not data.get("email"):
         return jsonify(status="failed", message="Email Address required!")
+    if not re.search(email_regex, data.get("email")):
+        return jsonify(status="failed", message="Invalid Email Address!")
     if not data.get("fullname"):
         return jsonify(status="failed", message="Fullname required!")
     if not data.get("password"):
