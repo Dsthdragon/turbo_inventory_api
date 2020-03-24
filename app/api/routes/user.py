@@ -13,7 +13,7 @@ email_regex = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
 
 
 @bp.route("/user", methods=["POST"])
-#@login_required
+@login_required
 def create_user():
     data = request.get_json()
 
@@ -64,7 +64,8 @@ def login():
     user = User.query.filter_by(email=data.get("email")).first()
     if user and user.check_password(data.get("password")):
         user_schema = UserSchema().dump(user)
-        resp = make_response(jsonify(status="success", message="Login Successful!", data=user_schema.data))
-        resp.set_cookie('auth', user.generate_token())
+        auth = user.generate_token()
+        resp = make_response(jsonify(status="success", message="Login Successful!", data=user_schema.data, auth=auth))
+        resp.set_cookie('auth', auth)
         return resp
     return jsonify(status="failed", message="Invalid login details")
