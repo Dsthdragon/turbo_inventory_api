@@ -10,8 +10,8 @@ from app import db
 import re
 
 
+@bp.route("/other_user", methods=["POST"])
 @login_required
-@bp.route("/other", methods=["POST"])
 def create_other():
     data = request.get_json()
 
@@ -37,3 +37,13 @@ def create_other():
     other = OtherSchema().dump(other).data
     return jsonify(status="success", message="Task SuccessFul", data=other)
 
+
+@bp.route("/other_user")
+@login_required
+def get_others():
+    other_model = Other.query.all()
+    if not other_model:
+        return jsonify(status='failed', message="No Other User Found!")
+    other_schema = OtherSchema(many=True).dump(other_model).data
+
+    return jsonify(status="failed", message="Other Users Found!", data=other_schema)

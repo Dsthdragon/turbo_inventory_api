@@ -1,5 +1,5 @@
 from flask import request
-from sqlalchemy import inspect, event
+from sqlalchemy import inspect, event, cast, Date
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm.attributes import get_history
@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
 
-from datetime import datetime
+from datetime import datetime, date
 
 from config import Config
 
@@ -17,21 +17,6 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine
 import json
 
 import jwt
-
-import enum
-
-
-class RoleType(enum.Enum):
-    manager = 'Manager'
-    supervisor = 'Supervisor'
-    storekeeper = 'Store Keeper'
-
-
-class RequestStatusType(enum.Enum):
-    pending = 'Pending'
-    approved = 'Approved'
-    accepted = 'Accepted'
-    rejected = 'Rejected'
 
 
 ACTION_CREATE = 1
@@ -53,7 +38,6 @@ class AuditableMixin:
             audit.state_before = kwargs.get("state_before")
             audit.state_after = kwargs.get("state_after")
             audit.save(connection)
-        print("Audited")
 
     @classmethod
     def __declare_last__(cls):
@@ -129,7 +113,7 @@ class User(AuditableMixin, db.Model):
     email = db.Column(EncryptedType(db.String, Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
     fullname = db.Column(EncryptedType(db.String(255), Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
     password_hash = db.Column(db.String(300), nullable=False)
-    role = db.Column(db.Enum(RoleType), nullable=False)
+    role = db.Column(db.String(255), nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
     last_activity = db.Column(db.DateTime, default=datetime.utcnow)
@@ -164,7 +148,7 @@ class Other(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(EncryptedType(db.String, Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
     phone = db.Column(EncryptedType(db.String, Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
-    staff = db.Column(EncryptedType(db.Boolean), default=True)
+    staff = db.Column(db.Boolean, default=True)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
@@ -184,9 +168,37 @@ class Request(AuditableMixin, db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     other_id = db.Column(db.Integer, db.ForeignKey("other.id"))
     credit = db.Column(db.Boolean, default=True)
-    status = db.Column(db.Enum(RequestStatusType), nullable=False)
+    status = db.Column(db.String(255), nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("requests", lazy=True))
+    other = db.relationship("Other", backref=db.backref("requests", lazy=True))
+
+    def validate_transactions(self, status):
+        for transaction in self.transactions:
+            catalog_model = Catalog.query.get(transaction.catalog_id)
+            catalog_report_model = CatalogReport.query.filter_by(catalog_id=catalog_model.id).filter(cast(
+                CatalogReport.created, Date) == date.today()).first()
+            if not catalog_report_model:
+                catalog_report_model = CatalogReport()
+                catalog_report_model.catalog_id = catalog_model.id
+                catalog_report_model.add = 0
+                catalog_report_model.taken = 0
+                catalog_report_model.transactions = 0
+                db.session.add(catalog_report_model)
+
+            if self.credit:
+                catalog_model.stock += transaction.amount
+                catalog_report_model.add += transaction.amount
+            else:
+                catalog_model.stock -= transaction.amount
+                catalog_report_model.taken += transaction.amount
+            catalog_report_model.transactions += 1
+            catalog_report_model.remaining = catalog_model.stock
+
+        self.status = status
+        db.session.commit()
 
 
 class Transaction(AuditableMixin, db.Model):
@@ -197,15 +209,21 @@ class Transaction(AuditableMixin, db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
+    request = db.relationship("Request", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
+    catalog = db.relationship("Catalog", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
+
 
 class CatalogReport(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     catalog_id = db.Column(db.Integer, db.ForeignKey("catalog.id"), nullable=False)
-    taken = db.Column(db.Float, nullable=False)
-    add = db.Column(db.Float, nullable=False)
-    remaining = db.Column(db.Float, nullable=False)
+    transactions = db.Column(db.Integer, default=0)
+    taken = db.Column(db.Float, nullable=False, default=0)
+    add = db.Column(db.Float, nullable=False, default=0)
+    remaining = db.Column(db.Float, nullable=False, default=0)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    catalog = db.relationship("Catalog", backref=db.backref("catalog_reports", lazy=True))
 
 
 class AuditLog(AuditableMixin, db.Model):
@@ -249,3 +267,5 @@ class AuditLog(AuditableMixin, db.Model):
     @hybrid_property
     def state_after_object(self):
         return json.loads(self.state_after)
+
+

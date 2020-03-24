@@ -1,8 +1,8 @@
-"""Database ReCreated
+"""Changed Enum Fields To ChoiceType
 
-Revision ID: 374d2ff27cda
+Revision ID: cdaf5e9e9793
 Revises: 
-Create Date: 2020-03-20 13:45:13.912214
+Create Date: 2020-03-23 17:53:10.165447
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import sqlalchemy_utils
 
 
 # revision identifiers, used by Alembic.
-revision = '374d2ff27cda'
+revision = 'cdaf5e9e9793'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,7 +33,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('fullname', sqlalchemy_utils.types.encrypted.encrypted_type.EncryptedType(), nullable=False),
     sa.Column('phone', sqlalchemy_utils.types.encrypted.encrypted_type.EncryptedType(), nullable=False),
-    sa.Column('staff', sqlalchemy_utils.types.encrypted.encrypted_type.EncryptedType(), nullable=True),
+    sa.Column('staff', sa.Boolean(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=True),
     sa.Column('updated', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -43,7 +43,7 @@ def upgrade():
     sa.Column('email', sqlalchemy_utils.types.encrypted.encrypted_type.EncryptedType(), nullable=False),
     sa.Column('fullname', sqlalchemy_utils.types.encrypted.encrypted_type.EncryptedType(), nullable=False),
     sa.Column('password_hash', sa.String(length=300), nullable=False),
-    sa.Column('role', sa.Enum('manager', 'supervisor', 'storekeeper', name='roletype'), nullable=False),
+    sa.Column('role', sa.String(length=255), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=True),
     sa.Column('updated', sa.DateTime(), nullable=True),
     sa.Column('last_activity', sa.DateTime(), nullable=True),
@@ -78,7 +78,7 @@ def upgrade():
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('other_id', sa.Integer(), nullable=True),
     sa.Column('credit', sa.Boolean(), nullable=True),
-    sa.Column('status', sa.Enum('pending', 'approved', 'accepted', 'rejected', name='requeststatustype'), nullable=False),
+    sa.Column('status', sa.String(length=255), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=True),
     sa.Column('updated', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['other_id'], ['other.id'], ),

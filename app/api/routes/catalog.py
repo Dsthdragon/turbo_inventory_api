@@ -52,7 +52,7 @@ def update_catalog(catalog_id):
     if not data.get("description"):
         return jsonify(status="failed", message="Description required!")
     if not data.get("unit"):
-        return jsonify(status="failed", message="Role required!")
+        return jsonify(status="failed", message="Unit required!")
 
     catalog_model = Catalog.query.get(catalog_id)
     if not catalog_model:

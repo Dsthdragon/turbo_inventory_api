@@ -6,8 +6,8 @@ from app.schemas import *
 from app.models import *
 
 
-@login_required
 @bp.route("/audit_log")
+@login_required
 def get_logs():
     audit_log_model = AuditLog.query.all()
     if not audit_log_model:
@@ -17,8 +17,8 @@ def get_logs():
     return jsonify(status="success", message="Audit logs Found", data=audit_log_schema)
 
 
-@login_required
 @bp.route("/audit_log/<audit_id>")
+@login_required
 def get_log(audit_id):
     audit_log_model = AuditLog.query.get(audit_id)
     if not audit_log_model:

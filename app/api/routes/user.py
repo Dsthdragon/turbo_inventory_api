@@ -12,8 +12,8 @@ import re
 email_regex = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
 
 
-@login_required
 @bp.route("/user", methods=["POST"])
+@login_required
 def create_user():
     data = request.get_json()
 
@@ -49,6 +49,7 @@ def create_user():
 
 
 @bp.route("/user")
+@login_required
 def get_users():
     user = User.query.all()
     user_schema = UserSchema(many=True, strict=True).dump(user)

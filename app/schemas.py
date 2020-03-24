@@ -8,8 +8,6 @@ from marshmallow_enum import EnumField
 
 
 class UserSchema(ma.TableSchema):
-    role = EnumField(RoleType, by_value=True)
-
     class Meta:
         table = User.__table__
 
