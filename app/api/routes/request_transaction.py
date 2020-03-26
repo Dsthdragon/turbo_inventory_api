@@ -84,7 +84,9 @@ def update_request(request_id):
     if not data.get("status"):
         return jsonify(status="failed", message="Status Required")
     request_model = Request.query.get(request_id)
-
+    if not request_model:
+        return jsonify(status="failed", message="Request Not Found")
+        
     if data.get("status").lower() == "approved":
         user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
         if user_model.role == 'Store Keeper':
