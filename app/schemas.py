@@ -4,8 +4,6 @@ from app.models import *
 
 from marshmallow import fields
 
-from marshmallow_enum import EnumField
-
 
 class UserSchema(ma.TableSchema):
     class Meta:
@@ -25,22 +23,27 @@ class CatalogSchema(ma.TableSchema):
 class RequestSchema(ma.TableSchema):
     class Meta:
         table = Request.__table__
+    user_id = fields.Int()
+    other_id = fields.Int()
 
 
 class TransactionSchema(ma.TableSchema):
     class Meta:
         table = Transaction.__table__
+    catalog_id = fields.Int()
+    request_id = fields.Int()
 
 
 class CatalogReportSchema(ma.TableSchema):
     class Meta:
         table = CatalogReport.__table__
+    catalog_id = fields.Int()
 
 
 class AuditLogSchema(ma.TableSchema):
     class Meta:
         table = AuditLog.__table__
-
+    user_id = fields.Int()
 
 
 
