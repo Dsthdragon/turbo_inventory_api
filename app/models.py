@@ -236,7 +236,10 @@ class AuditLog(AuditableMixin, db.Model):
     state_after = db.Column(db.Text)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    
+    
+    user = db.relationship("User", backref=db.backref("audits", lazy=True))
+    
     def __repr__(self):
         return "<AuditLog %r: %r -> %r>" % (
             self.user_id,

@@ -46,4 +46,4 @@ def get_others():
         return jsonify(status='failed', message="No Other User Found!")
     other_schema = OtherSchema(many=True).dump(other_model).data
 
-    return jsonify(status="failed", message="Other Users Found!", data=other_schema)
+    return jsonify(status="success", message="Other Users Found!", data=other_schema)

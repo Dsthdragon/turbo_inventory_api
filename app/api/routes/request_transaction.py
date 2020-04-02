@@ -9,7 +9,7 @@ from app.models import *
 @bp.route("/request")
 @login_required
 def get_requests():
-    request_models = Request.query.all()
+    request_models = Request.query.order_by(Request.created.desc()).all()
     if not request_models:
         return jsonify(status='failed', message='Requests not found')
 
@@ -89,7 +89,7 @@ def update_request(request_id):
         
     if data.get("status").lower() == "approved":
         user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
-        if user_model.role == 'Store Keeper':
+        if user_model.role == 'store keeper':
             return jsonify(status="failed", message="Do not have access to this task!")
         if request_model.status == "pending":
             request_model.status = data.get("status").lower()
@@ -106,14 +106,33 @@ def update_request(request_id):
             return jsonify(status="success", message="Request Rejected", data=RequestSchema().dump(request_model).data)
 
     return jsonify(status="failed", message="Invalid Status Sent")
-
-
+    
+    
 @bp.route("/request/<request_id>/transaction")
 @login_required
 def get_request_transaction(request_id):
-    transaction_models = Transaction.query.filter_by(request_id=request_id).all()
+    transaction_models = Transaction.query.filter_by(request_id=request_id).order_by(Transaction.created.desc()).all()
     if not transaction_models:
         return jsonify(status='failed', message='No Transactions Found!')
     transaction_schema = TransactionSchema(many=True).dump(transaction_models).data
-    return jsonify(status='success', message='Request Transaction Found!', data=transaction_schema)
+    return jsonify(status='success', message='Request Transactions Found!', data=transaction_schema)
 
+    
+@bp.route("/transaction")
+@login_required
+def get_transactions():
+    transaction_models = Transaction.query.order_by(Transaction.created.desc()).all()
+    if not transaction_models:
+        return jsonify(status='failed', message='No Transactions Found!')
+    transaction_schema = TransactionSchema(many=True).dump(transaction_models).data
+    return jsonify(status='success', message='Transactions Found!', data=transaction_schema)
+
+    
+@bp.route("/transaction/<transaction_id>")
+@login_required
+def get_transaction(transaction_id):
+    transaction_model = Transaction.query.get(transaction_id)
+    if not transaction_model:
+        return jsonify(status='failed', message='Transaction Not Found!')
+    transaction_schema = TransactionSchema().dump(transaction_model).data
+    return jsonify(status='success', message='Transaction Found!', data=transaction_schema)

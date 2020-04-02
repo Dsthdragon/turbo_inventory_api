@@ -9,7 +9,7 @@ from app.models import *
 @bp.route("/audit_log")
 @login_required
 def get_logs():
-    audit_log_model = AuditLog.query.all()
+    audit_log_model = AuditLog.query.order_by(AuditLog.created.desc()).all()
     if not audit_log_model:
         return jsonify(status="failed", message="Audit Log Not Found")
     audit_log_schema = AuditLogSchema(many=True).dump(audit_log_model).data

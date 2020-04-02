@@ -82,9 +82,21 @@ def get_catalog(catalog_id):
 @bp.route("/catalog")
 @login_required
 def get_catalogs():
-    catalog_model = Catalog.query.all()
+    catalog_model = Catalog.query.order_by(Catalog.created.desc()).all()
     if not catalog_model:
         return jsonify(status="failed", message="Catalog Item Not Found!")
 
     catalog_schema = CatalogSchema(many=True).dump(catalog_model).data
     return jsonify(status="success", message="Catalog Items Found", data=catalog_schema)
+
+
+    
+@bp.route("/catalog/<catalog_id>/transaction")
+@login_required
+def get_catalog_transaction(catalog_id):
+    transaction_models = Transaction.query.filter_by(catalog_id=catalog_id).order_by(Transaction.created.desc()).all()
+    if not transaction_models:
+        return jsonify(status='failed', message='No Transactions Found!')
+    transaction_schema = TransactionSchema(many=True).dump(transaction_models).data
+    return jsonify(status='success', message='Request Transaction Found!', data=transaction_schema)
+
