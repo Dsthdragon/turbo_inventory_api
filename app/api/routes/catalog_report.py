@@ -11,7 +11,7 @@ from app import db
 @bp.route("/catalog_report")
 @login_required
 def get_catalog_reports():
-    catalog_report_models = CatalogReport.query.all()
+    catalog_report_models = CatalogReport.query.order_by(CatalogReport.created.desc()).all()
     if not catalog_report_models:
         return jsonify(status="failed", message="No Report Found")
     return jsonify(
@@ -24,7 +24,7 @@ def get_catalog_reports():
 @bp.route("/catalog_report/<catalog_id>/reports")
 @login_required
 def get_catalog_report(catalog_id):
-    catalog_report_models = CatalogReport.query.filter_by(catalog_id=catalog_id).all()
+    catalog_report_models = CatalogReport.query.filter_by(catalog_id=catalog_id).order_by(CatalogReport.created.desc()).all()
     if not catalog_report_models:
         return jsonify(status="failed", message="No Report Found For Catalog")
     return jsonify(
