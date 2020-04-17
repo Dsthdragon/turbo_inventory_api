@@ -9,8 +9,8 @@ class UserSchema(ma.TableSchema):
     class Meta:
         table = User.__table__
         
-    requests = fields.Nested('RequestSchema',  many=True, only=["id", "transactions", "other", "credit", "status"])
-    audits = fields.Nested('AuditLogSchema',  many=True, only=["id", "target_type", "target_id", "state_before", "state_after"])
+    #requests = fields.Nested('RequestSchema',  many=True, only=["id", "transactions", "other", "credit", "status"])
+    #audits = fields.Nested('AuditLogSchema',  many=True, only=["id", "target_type", "target_id", "state_before", "state_after"])
     
 
 class OtherSchema(ma.TableSchema):
