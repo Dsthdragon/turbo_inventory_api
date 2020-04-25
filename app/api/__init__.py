@@ -14,6 +14,8 @@ def login_required(f):
         user = User.query.get(user_id)
         if not user:
             return jsonify(status="failed", message="Login to continue", isAuth=False)
+        elif user.blocked:
+            return jsonify(status="failed", message="Account Blocked", isAuth=False)
         return f(*args, **kwargs)
     return wrap
 
