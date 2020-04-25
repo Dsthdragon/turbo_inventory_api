@@ -116,6 +116,7 @@ class User(AuditableMixin, db.Model):
     role = db.Column(db.String(255), nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    blocked = db.Column(db.Boolean, default=False)
     last_activity = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password):
@@ -148,6 +149,7 @@ class Other(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fullname = db.Column(EncryptedType(db.String, Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
     phone = db.Column(EncryptedType(db.String, Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
+    blocked = db.Column(db.Boolean, default=False)
     staff = db.Column(db.Boolean, default=True)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
@@ -168,6 +170,7 @@ class Request(AuditableMixin, db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     other_id = db.Column(db.Integer, db.ForeignKey("other.id"))
     credit = db.Column(db.Boolean, default=True)
+    comment = db.Column(db.Text)
     status = db.Column(db.String(255), nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)

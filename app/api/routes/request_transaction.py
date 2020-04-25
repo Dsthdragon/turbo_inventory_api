@@ -36,6 +36,7 @@ def create_request():
     request_model.user_id = User.decode_token(request.cookies.get('auth'))
     request_model.status = "pending"
     request_model.other_id = other_model.id
+    request_model.comment = data.get('comment')
     request_model.credit = True if data.get("credit") else False
 
     db.session.add(request_model)

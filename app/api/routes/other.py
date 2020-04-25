@@ -47,3 +47,20 @@ def get_others():
     other_schema = OtherSchema(many=True).dump(other_model).data
 
     return jsonify(status="success", message="Other Users Found!", data=other_schema)
+
+
+@bp.route("/other_user/<int:user_id>/state", methods=["PUT"])
+@login_required
+def change_other_user_state(user_id):
+    data = request.get_json()
+    if not data:
+        return jsonify(status='failed', message="No data sent!")
+
+    other = Other.query.get(user_id)
+
+    if not other:
+        return jsonify(status='failed', message="Other User Not Found!")
+    other.blocked = data.get("blocked")
+    db.session.commit()
+
+    return jsonify(status='success', message="Other User State Updated!", data=OtherSchema().dump(other).data)

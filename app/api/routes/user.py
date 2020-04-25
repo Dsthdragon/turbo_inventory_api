@@ -79,3 +79,45 @@ def login():
         resp.set_cookie('auth', auth)
         return resp
     return jsonify(status="failed", message="Invalid login details")
+
+
+@bp.route("/user/<int:user_id>/change_password", methods=["PUT"])
+@login_required
+def change_user_password(user_id):
+    data = request.get_json()
+    if not data:
+        return jsonify(status='failed', message="No data sent!")
+    if not data.get('password'):
+        return jsonify(status='failed', message="Password Required!")
+    if not data.get('new_password'):
+        return jsonify(status='failed', message="New Password Required!")
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify(status='failed', message="User Not Found!")
+    if not user.check_password(data.get('password')):
+        return jsonify(status='failed', message="Password Invalid!")
+    user.set_password(data.get('new_password'))
+    db.session.commit()
+
+    return jsonify(status='success', message="Password Updated!", data=UserSchema().dump(user).data)
+
+
+@bp.route("/user/<int:user_id>/state", methods=["PUT"])
+@login_required
+def change_user_state(user_id):
+    data = request.get_json()
+    if not data:
+        return jsonify(status='failed', message="No data sent!")
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify(status='failed', message="User Not Found!")
+    user.blocked = data.get("blocked")
+    db.session.commit()
+
+    return jsonify(status='success', message="User State Updated!", data=UserSchema().dump(user).data)
+
+
