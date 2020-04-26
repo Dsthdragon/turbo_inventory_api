@@ -72,6 +72,8 @@ def login():
         return jsonify(status='failed', message="No data sent!")
     user = User.query.filter_by(email=data.get("email")).first()
     if user and user.check_password(data.get("password")):
+        if user.blocked:
+            return jsonify(status='failed', message="User Account Blocked!")
         user_schema = UserSchema().dump(user)
         auth = user.generate_token()
         resp = make_response(jsonify(status="success", message="Login Successful!", data=user_schema.data, auth=auth))
