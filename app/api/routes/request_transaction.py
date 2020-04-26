@@ -90,7 +90,7 @@ def update_request(request_id):
         
     if data.get("status").lower() == "approved":
         user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
-        if user_model.role == 'store keeper':
+        if user_model.role == 'manager':
             return jsonify(status="failed", message="Do not have access to this task!")
         if request_model.status == "pending":
             request_model.status = data.get("status").lower()

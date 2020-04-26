@@ -18,7 +18,7 @@ def create_user():
     data = request.get_json()
 
     user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
-    if user_model.role != 'manager':
+    if user_model.role != 'admin':
         return jsonify(status="failed", message="You can not create user!")
         
     if data is None:
@@ -34,7 +34,7 @@ def create_user():
     if not data.get("role"):
         return jsonify(status="failed", message="Role required!")
     
-    roles = ['manager', 'supervisor', 'store keeper']
+    roles = ['admin', 'supervisor', 'manager']
         
     if data.get("role") not in roles:
         return jsonify(status="failed", message="Role Invalid!")
@@ -42,7 +42,6 @@ def create_user():
     user = User.query.filter_by(email=data["email"]).first()
     if user:
         return jsonify(status="failed", message="Email Address already in system!")
-    
 
     user = User()
     user.email = data.get("email")
