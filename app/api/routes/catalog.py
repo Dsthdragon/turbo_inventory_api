@@ -21,8 +21,6 @@ def create_catalog():
         return jsonify(status="failed", message="Name required!")
     if not data.get("description"):
         return jsonify(status="failed", message="Description required!")
-    if not data.get("stock"):
-        return jsonify(status="failed", message="Password required!")
     if not data.get("unit"):
         return jsonify(status="failed", message="Role required!")
 
@@ -52,15 +50,12 @@ def create_catalogs():
             return jsonify(status="failed", message="Name required!")
         if not data.get("description"):
             return jsonify(status="failed", message="Description required!")
-        if not data.get("stock"):
-            return jsonify(status="failed", message="Password required!")
         if not data.get("unit"):
             return jsonify(status="failed", message="Role required!")
 
         catalog_model = Catalog()
         catalog_model.name = data.get("name")
         catalog_model.description = data.get("description")
-        catalog_model.stock = data.get("stock")
         catalog_model.unit = data.get("unit")
 
         db.session.add(catalog_model)
@@ -120,14 +115,3 @@ def get_catalogs():
 
     catalog_schema = CatalogSchema(many=True).dump(catalog_model).data
     return jsonify(status="success", message="Catalog Items Found", data=catalog_schema)
-
-
-@bp.route("/catalog/<catalog_id>/transaction")
-@login_required
-def get_catalog_transaction(catalog_id):
-    transaction_models = Transaction.query.filter_by(catalog_id=catalog_id).order_by(Transaction.created.desc()).all()
-    if not transaction_models:
-        return jsonify(status='failed', message='No Transactions Found!')
-    transaction_schema = TransactionSchema(many=True).dump(transaction_models).data
-    return jsonify(status='success', message='Request Transaction Found!', data=transaction_schema)
-

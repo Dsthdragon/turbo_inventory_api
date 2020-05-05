@@ -18,10 +18,15 @@ import json
 
 import jwt
 
-
 ACTION_CREATE = 1
 ACTION_UPDATE = 2
 ACTION_DELETE = 3
+
+StoreUser = db.Table(
+    "store_user",
+    db.Column("store_id", db.Integer, db.ForeignKey("store.id"), primary_key=False),
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id"), primary_key=False)
+)
 
 
 class AuditableMixin:
@@ -108,6 +113,16 @@ class AuditableMixin:
         )
 
 
+class Store(AuditableMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(300), nullable=False)
+    address = db.Column(db.Text)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    users = db.relationship("User", secondary=StoreUser, lazy="subquery", backref=db.backref("stores", lazy=True))
+
+
 class User(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(EncryptedType(db.String, Config.SECRET_KEY, AesEngine, 'pkcs5'), nullable=False)
@@ -155,11 +170,22 @@ class Other(AuditableMixin, db.Model):
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
 
+class Stock(AuditableMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    catalog_id = db.Column(db.Integer, db.ForeignKey("catalog.id"), nullable=False)
+    store_id = db.Column(db.Integer, db.ForeignKey("store.id"), nullable=False)
+    amount = db.Column(db.Float, default=0)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    store = db.relationship("Store", backref=db.backref("stocks", lazy=True, cascade="all,delete"))
+    catalog = db.relationship("Catalog", backref=db.backref("stocks", lazy=True, cascade="all,delete"))
+
+
 class Catalog(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(300), nullable=False)
     description = db.Column(db.Text)
-    stock = db.Column(db.Float)
     unit = db.Column(db.String(100))
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
@@ -169,6 +195,7 @@ class Request(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     other_id = db.Column(db.Integer, db.ForeignKey("other.id"))
+    store_id = db.Column(db.Integer, db.ForeignKey("store.id"), nullable=False)
     credit = db.Column(db.Boolean, default=True)
     comment = db.Column(db.Text)
     status = db.Column(db.String(255), nullable=False)
@@ -180,25 +207,28 @@ class Request(AuditableMixin, db.Model):
 
     def validate_transactions(self, status):
         for transaction in self.transactions:
-            catalog_model = Catalog.query.get(transaction.catalog_id)
-            catalog_report_model = CatalogReport.query.filter_by(catalog_id=catalog_model.id).filter(cast(
-                CatalogReport.created, Date) == date.today()).first()
-            if not catalog_report_model:
-                catalog_report_model = CatalogReport()
-                catalog_report_model.catalog_id = catalog_model.id
-                catalog_report_model.add = 0
-                catalog_report_model.taken = 0
-                catalog_report_model.transactions = 0
-                db.session.add(catalog_report_model)
+            stock_model = Stock.query.get(transaction.stock_id)
+            stock_report_model = StockReport.query.filter_by(
+                stock_id=stock_model.id
+            ).filter(
+                cast(StockReport.created, Date) == date.today()
+            ).first()
+            if not stock_report_model:
+                stock_report_model = StockReport()
+                stock_report_model.stock_id = stock_model.id
+                stock_report_model.add = 0
+                stock_report_model.taken = 0
+                stock_report_model.transactions = 0
+                db.session.add(stock_report_model)
 
             if self.credit:
-                catalog_model.stock += transaction.amount
-                catalog_report_model.add += transaction.amount
+                stock_model.amount += transaction.amount
+                stock_report_model.add += transaction.amount
             else:
-                catalog_model.stock -= transaction.amount
-                catalog_report_model.taken += transaction.amount
-            catalog_report_model.transactions += 1
-            catalog_report_model.remaining = catalog_model.stock
+                stock_model.amount -= transaction.amount
+                stock_report_model.taken += transaction.amount
+            stock_report_model.transactions += 1
+            stock_report_model.remaining = stock_model.amount
 
         self.status = status
         db.session.commit()
@@ -207,18 +237,18 @@ class Request(AuditableMixin, db.Model):
 class Transaction(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     request_id = db.Column(db.Integer, db.ForeignKey("request.id"), nullable=False)
-    catalog_id = db.Column(db.Integer, db.ForeignKey("catalog.id"), nullable=False)
+    stock_id = db.Column(db.Integer, db.ForeignKey("stock.id"), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
     request = db.relationship("Request", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
-    catalog = db.relationship("Catalog", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
+    stock = db.relationship("Stock", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
 
 
-class CatalogReport(AuditableMixin, db.Model):
+class StockReport(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    catalog_id = db.Column(db.Integer, db.ForeignKey("catalog.id"), nullable=False)
+    stock_id = db.Column(db.Integer, db.ForeignKey("stock.id"), nullable=False)
     transactions = db.Column(db.Integer, default=0)
     taken = db.Column(db.Float, nullable=False, default=0)
     add = db.Column(db.Float, nullable=False, default=0)
@@ -226,7 +256,7 @@ class CatalogReport(AuditableMixin, db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
-    catalog = db.relationship("Catalog", backref=db.backref("catalog_reports", lazy=True))
+    stock = db.relationship("Stock", backref=db.backref("stock_reports", lazy=True))
 
 
 class AuditLog(AuditableMixin, db.Model):
@@ -239,10 +269,9 @@ class AuditLog(AuditableMixin, db.Model):
     state_after = db.Column(db.Text)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    
+
     user = db.relationship("User", backref=db.backref("audits", lazy=True))
-    
+
     def __repr__(self):
         return "<AuditLog %r: %r -> %r>" % (
             self.user_id,
@@ -273,5 +302,3 @@ class AuditLog(AuditableMixin, db.Model):
     @hybrid_property
     def state_after_object(self):
         return json.loads(self.state_after)
-
-

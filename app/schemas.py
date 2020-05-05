@@ -44,16 +44,14 @@ class TransactionSchema(ma.TableSchema):
     catalog_id = fields.Int()
     request_id = fields.Int()
     
-    catalog = fields.Nested('CatalogSchema', only=["id", "name", "description", "stock", "unit"])
+    stock = fields.Nested('StockSchema', only=["id", "name", "description", "unit"])
     request = fields.Nested('RequestSchema', only=["id", "user", "other", "credit", "status"])
 
 
-class CatalogReportSchema(ma.TableSchema):
+class StockReportSchema(ma.TableSchema):
     class Meta:
-        table = CatalogReport.__table__
-    catalog_id = fields.Int()
-    
-    catalog = fields.Nested('CatalogSchema', only=["id", "name", "description", "stock", "unit"])
+        table = StockReport.__table__
+    stock_id = fields.Int()
 
 
 class AuditLogSchema(ma.TableSchema):
@@ -64,5 +62,18 @@ class AuditLogSchema(ma.TableSchema):
     
     user = fields.Nested('UserSchema', only=["id", "email", "fullname", "role"])
 
+
+class StockSchema(ma.TableSchema):
+    class Meta:
+        table = Stock.__table__
+    catalog_id = fields.Int()
+    store_id = fields.Int()
+
+    catalog = fields.Nested('StockSchema', only=["id", "name", "description", "unit"])
+
+
+class StoreSchema(ma.TableSchema):
+    class Meta:
+        table = Store.__table__
 
 
