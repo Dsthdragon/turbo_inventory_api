@@ -191,6 +191,19 @@ class Catalog(AuditableMixin, db.Model):
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
 
+class RequestResponse(AuditableMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    action = db.Column(db.String(100))
+    comment = db.Column(db.Text)
+    request_id = db.Column(db.Integer, db.ForeignKey("request.id"), nullable=False)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("responses", lazy=True))
+    request = db.relationship("Request", backref=db.backref("responses", lazy=True))
+
+
 class Request(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
@@ -204,6 +217,7 @@ class Request(AuditableMixin, db.Model):
 
     user = db.relationship("User", backref=db.backref("requests", lazy=True))
     other = db.relationship("Other", backref=db.backref("requests", lazy=True))
+    store = db.relationship("Store", backref=db.backref("requests", lazy=True))
 
     def validate_transactions(self, status):
         for transaction in self.transactions:

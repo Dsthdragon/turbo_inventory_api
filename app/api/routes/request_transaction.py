@@ -36,25 +36,26 @@ def create_request():
     request_model.user_id = User.decode_token(request.cookies.get('auth'))
     request_model.status = "pending"
     request_model.other_id = other_model.id
+    request_model.store_id = data.get('store_id')
     request_model.comment = data.get('comment')
     request_model.credit = True if data.get("credit") else False
 
     db.session.add(request_model)
 
     for transaction in data.get("transactions"):
-        catalog_model = Catalog.query.get(transaction.get("catalog_id"))
-        if not catalog_model:
-            return jsonify(status="failed", message="Catalog Item not found!")
+        stock_model = Stock.query.get(transaction.get("stock_id"))
+        if not stock_model:
+            return jsonify(status="failed", message="Stock Item not found!")
         if not transaction.get("amount"):
             return jsonify(status="failed", message="No transactions found!")
-        if not data.get("credit") and transaction.get("amount") > catalog_model.stock:
-            return jsonify(status="failed", message="{}'s stock is insufficient!".format(catalog_model.name))
+        if not data.get("credit") and transaction.get("amount") > stock_model.amount:
+            return jsonify(status="failed", message="{}'s stock is insufficient!".format(stock_model.catalog.name))
 
         transaction_model = Transaction()
 
         transaction_model.request = request_model
         transaction_model.amount = transaction.get("amount")
-        transaction_model.catalog = catalog_model
+        transaction_model.stock = stock_model
 
         db.session.add(transaction_model)
     db.session.commit()
@@ -84,15 +85,24 @@ def update_request(request_id):
 
     if not data.get("status"):
         return jsonify(status="failed", message="Status Required")
+    if not data.get("comment"):
+        return jsonify(status="failed", message="Status Required")
     request_model = Request.query.get(request_id)
     if not request_model:
         return jsonify(status="failed", message="Request Not Found")
-        
+
+    user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
+    response = RequestResponse()
+    response.comment = data.get('comment')
+    response.request_id = request_model.id
+    response.user_id = user_model.id
+    response.action = data.get('status')
+    db.session.add(response)
     if data.get("status").lower() == "approved":
-        user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
         if user_model.role.lower() == 'manager':
             return jsonify(status="failed", message="Do not have access to this task!")
         if request_model.status == "pending":
+
             request_model.status = data.get("status").lower()
             db.session.commit()
             return jsonify(status="success", message="Request Approved", data=RequestSchema().dump(request_model).data)

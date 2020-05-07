@@ -18,10 +18,8 @@ def create_stock():
 
     if not data.get("catalog_id"):
         return jsonify(status="failed", message="Catalog Id Required!")
-    if not data.get("stock_id"):
-        return jsonify(status="failed", message="Stock Id Required!")
-    if not data.get("amount"):
-        return jsonify(status="failed", message="Amount required!")
+    if not data.get("store_id"):
+        return jsonify(status="failed", message="Store Id Required!")
 
     catalog_model = Catalog.query.get(data.get('catalog_id'))
     if not catalog_model:
@@ -39,7 +37,7 @@ def create_stock():
         return jsonify(status="failed", message="Catalog already stocked for Store!")
 
     stock_model = Stock()
-    stock_model.amount = data.get("amount")
+    stock_model.amount = data.get("amount") or 0
     stock_model.catalog_id = data.get("catalog_id")
     stock_model.store_id = data.get("store_id")
 
@@ -57,6 +55,8 @@ def create_stocks():
 
     if datas is None:
         return jsonify(status="failed", message="No Data Sent!")
+    if not datas.get("stocks"):
+        return jsonify(status="failed", message="No Stocks Sent!")
     stock_models = []
     for data in datas.get("stocks"):
         if data is None:
@@ -64,10 +64,8 @@ def create_stocks():
 
         if not data.get("catalog_id"):
             return jsonify(status="failed", message="Catalog Id Required!")
-        if not data.get("stock_id"):
-            return jsonify(status="failed", message="Stock Id Required!")
-        if not data.get("amount"):
-            return jsonify(status="failed", message="Amount required!")
+        if not data.get("store_id"):
+            return jsonify(status="failed", message="Store Id Required!")
 
         catalog_model = Catalog.query.get(data.get('catalog_id'))
         if not catalog_model:
@@ -85,7 +83,7 @@ def create_stocks():
             return jsonify(status="failed", message="Catalog already stocked for Store!")
 
         stock_model = Stock()
-        stock_model.amount = data.get("amount")
+        stock_model.amount = data.get("amount") or 0
         stock_model.catalog_id = data.get("catalog_id")
         stock_model.store_id = data.get("store_id")
 
@@ -117,4 +115,16 @@ def get_stocks():
 
     stock_schema = StockSchema(many=True).dump(stock_model).data
     return jsonify(status="success", message="Stock Items Found", data=stock_schema)
+
+
+@bp.route("/stock/<stock_id>/transactions")
+@login_required
+def get_stock_transactions(stock_id):
+    stock_model = Stock.query.get(stock_id)
+    if not stock_model:
+        return jsonify(status="failed", message="Stock Item Not Found!")
+    transactions = Transaction.query.filter_by(stock_id=stock_id).all()
+    transactions_schema = TransactionSchema(many=True).dump(transactions).data
+    return jsonify(status="success", message="Stock Transactions Found", data=transactions_schema)
+
 

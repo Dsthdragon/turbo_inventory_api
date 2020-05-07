@@ -94,6 +94,28 @@ def get_store_users(store_id):
     )
 
 
+@bp.route("/store/<int:store_id>/requests")
+@login_required
+def get_store_requests(store_id):
+    requests = Request.query.filter_by(store_id=store_id).all()
+
+    return jsonify(
+        status="success", message="Store Requests",
+        data=RequestSchema(many=True).dump(requests).data
+    )
+
+
+@bp.route("/store/<int:store_id>/transactions")
+@login_required
+def get_store_transactions(store_id):
+    transactions = Transaction.query.filter(Stock.transactions.any(Store.id == store_id))
+
+    return jsonify(
+        status="success", message="Store Transactions",
+        data=TransactionSchema(many=True).dump(transactions).data
+    )
+
+
 @bp.route("/store/<int:store_id>/users", methods=['PUT'])
 @login_required
 def add_user_to_store(store_id):
