@@ -13,7 +13,7 @@ email_regex = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
 
 
 @bp.route("/user", methods=["POST"])
-@login_required
+#@login_required
 def create_user():
     data = request.get_json()
 
