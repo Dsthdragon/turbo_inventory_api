@@ -85,15 +85,13 @@ def update_request(request_id):
 
     if not data.get("status"):
         return jsonify(status="failed", message="Status Required")
-    if not data.get("comment"):
-        return jsonify(status="failed", message="Status Required")
     request_model = Request.query.get(request_id)
     if not request_model:
         return jsonify(status="failed", message="Request Not Found")
 
     user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
     response = RequestResponse()
-    response.comment = data.get('comment')
+    response.comment = data.get('comment') || 'No Comment'
     response.request_id = request_model.id
     response.user_id = user_model.id
     response.action = data.get('status')
