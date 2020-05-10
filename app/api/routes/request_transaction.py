@@ -97,10 +97,7 @@ def update_request(request_id):
     response.action = data.get('status')
     db.session.add(response)
     if data.get("status").lower() == "approved":
-        if user_model.role.lower() == 'manager':
-            return jsonify(status="failed", message="Do not have access to this task!")
         if request_model.status == "pending":
-
             request_model.status = data.get("status").lower()
             db.session.commit()
             return jsonify(status="success", message="Request Approved", data=RequestSchema().dump(request_model).data)
