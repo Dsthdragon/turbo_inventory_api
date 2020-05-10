@@ -91,7 +91,7 @@ def update_request(request_id):
 
     user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
     response = RequestResponse()
-    response.comment = data.get('comment') || 'No Comment'
+    response.comment = data.get('comment') or 'No Comment'
     response.request_id = request_model.id
     response.user_id = user_model.id
     response.action = data.get('status')
