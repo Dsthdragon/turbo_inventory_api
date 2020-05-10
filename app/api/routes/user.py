@@ -13,13 +13,13 @@ email_regex = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
 
 
 @bp.route("/user", methods=["POST"])
-#@login_required
+@login_required
 def create_user():
     data = request.get_json()
 
-    #user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
-    #if user_model.role.lower() != 'admin':
-        #return jsonify(status="failed", message="You can not create user!")
+    user_model = User.query.get(User.decode_token(request.cookies.get('auth')))
+    if user_model.role.lower() != 'admin':
+        return jsonify(status="failed", message="You can not create user!")
         
     if data is None:
         return jsonify(status="failed", message="No Data Sent!")
