@@ -204,6 +204,112 @@ class RequestResponse(AuditableMixin, db.Model):
     request = db.relationship("Request", backref=db.backref("responses", lazy=True))
 
 
+class StoreTransfer(AuditableMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sent_user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    received_user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    approved_user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    from_store_id = db.Column(db.Integer, db.ForeignKey("store.id"), nullable=False)
+    to_store_id = db.Column(db.Integer, db.ForeignKey("store.id"), nullable=False)
+    status = db.Column(db.String(255), nullable=False)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    sent_by = db.relationship("User", backref=db.backref("transfers_sent", lazy=True), foreign_keys=[sent_user_id])
+    received_by = db.relationship("User", backref=db.backref("transfers_received", lazy=True), foreign_keys=[received_user_id])
+    approved_by = db.relationship("User", backref=db.backref("transfers_approved", lazy=True), foreign_keys=[approved_user_id])
+
+    from_store = db.relationship("Store", backref=db.backref("transferred_from", lazy=True), foreign_keys=[from_store_id])
+    to_store = db.relationship("Store", backref=db.backref("transferred_to", lazy=True), foreign_keys=[to_store_id])
+
+    def deduct_from_store(self, status, user_id):
+        for item in self.transfer_items:
+            stock_model = Stock.query.get(item.stock_id)
+            stock_report_model = StockReport.query.filter_by(
+                stock_id=stock_model.id
+            ).filter(
+                cast(StockReport.created, Date) == date.today()
+            ).first()
+            if not stock_report_model:
+                stock_report_model = StockReport()
+                stock_report_model.stock_id = stock_model.id
+                stock_report_model.add = 0
+                stock_report_model.taken = 0
+                stock_report_model.transactions = 0
+                db.session.add(stock_report_model)
+
+            stock_model.amount -= item.amount
+            stock_report_model.taken += item.amount
+            stock_report_model.transactions += 1
+            stock_report_model.remaining = stock_model.amount
+
+        self.approved_user_id = user_id
+        self.status = status
+        db.session.commit()
+
+    def add_to_store(self, status, user_id):
+        for item in self.transfer_items:
+
+            stock_model = Stock.query.filter_by(store_id=self.to_store_id, catalog_id=item.stock.catalog_id).first()
+            if not stock_model:
+                stock_model = Stock()
+                stock_model.catalog_id = item.stock.catalog_id
+                stock_model.store_id = self.to_store_id
+                stock_model.amount = 0
+                db.session.add(stock_model)
+
+            stock_report_model = StockReport.query.filter_by(
+                stock_id=stock_model.id
+            ).filter(
+                cast(StockReport.created, Date) == date.today()
+            ).first()
+            if not stock_report_model:
+                stock_report_model = StockReport()
+                stock_report_model.stock_id = stock_model.id
+                stock_report_model.add = 0
+                stock_report_model.taken = 0
+                stock_report_model.transactions = 0
+                db.session.add(stock_report_model)
+
+            item.other_stock_id = stock_model.id
+            stock_model.amount += item.amount
+            stock_report_model.add += item.amount
+            stock_report_model.transactions += 1
+            stock_report_model.remaining = stock_model.amount
+
+        self.received_user_id = user_id
+        self.status = status
+        db.session.commit()
+
+
+class TransferItem(AuditableMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    store_transfer_id = db.Column(db.Integer, db.ForeignKey("store_transfer.id"), nullable=False)
+    stock_id = db.Column(db.Integer, db.ForeignKey("stock.id"), nullable=False)
+    other_stock_id = db.Column(db.Integer, db.ForeignKey("stock.id"))
+    amount = db.Column(db.Float, nullable=False)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    store_transfer = db.relationship("StoreTransfer", backref=db.backref("transfer_items", lazy=True, cascade="all,delete"))
+    stock = db.relationship("Stock", backref=db.backref("transfer_items_deduct", lazy=True, cascade="all,delete"), foreign_keys=[stock_id])
+    other_stock = db.relationship("Stock", backref=db.backref("transfer_items_added", lazy=True, cascade="all,delete"), foreign_keys=[other_stock_id])
+
+
+class HoldItem(AuditableMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    stock_id = db.Column(db.Integer, db.ForeignKey("stock.id"), nullable=False)
+    store_id = db.Column(db.Integer, db.ForeignKey("store.id"), nullable=False)
+    identity = db.Column(db.Text)
+    reason = db.Column(db.Text)
+    in_store = db.Column(db.Boolean)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    store = db.relationship("Store", backref=db.backref("held_items", lazy=True))
+    stock = db.relationship("Stock", backref=db.backref("held_items", lazy=True, cascade="all,delete"))
+
+
 class Request(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
@@ -259,6 +365,9 @@ class Transaction(AuditableMixin, db.Model):
     request = db.relationship("Request", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
     stock = db.relationship("Stock", backref=db.backref("transactions", lazy=True, cascade="all,delete"))
 
+    @hybrid_property
+    def store(self):
+        return self.request.store
 
 class StockReport(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -20,4 +20,9 @@ def login_required(f):
     return wrap
 
 
-from app.api.routes import user, catalog, audit_log, other, request_transaction, stock_report, stock, store
+from app.api.routes import (
+    user, catalog,
+    audit_log, other, held_item,
+    request_transaction, stock_report,
+    stock, store, store_transfer
+)

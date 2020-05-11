@@ -50,8 +50,9 @@ class TransactionSchema(ma.TableSchema):
         table = Transaction.__table__
     request_id = fields.Int()
     
-    stock = fields.Nested('StockSchema', only=["id", "catalog", "amount"])
+    stock = fields.Nested('StockSchema', only=["id", "catalog", "amount", "store"])
     request = fields.Nested('RequestSchema', only=["id", "user", "other", "credit", "status"])
+    store = fields.Nested('StoreSchema')
 
 
 class StockReportSchema(ma.TableSchema):
@@ -82,5 +83,34 @@ class StockSchema(ma.TableSchema):
 class StoreSchema(ma.TableSchema):
     class Meta:
         table = Store.__table__
+
+
+class StoreTransferSchema(ma.TableSchema):
+    class Meta:
+        table = StoreTransfer.__table__
+
+    sent_by = fields.Nested('UserSchema', only=["id", "email", "fullname", "role"])
+    received_by = fields.Nested('UserSchema', only=["id", "email", "fullname", "role"])
+    approved_by = fields.Nested('UserSchema', only=["id", "email", "fullname", "role"])
+
+    from_store = fields.Nested('StoreSchema')
+    to_store = fields.Nested('StoreSchema')
+
+
+class TransferItemSchema(ma.TableSchema):
+    class Meta:
+        table = TransferItem.__table__
+
+    store_transfer = fields.Nested('StoreTransferSchema')
+    stock = fields.Nested('StockSchema', only=["id", "catalog", "amount", "store"])
+    other_stock = fields.Nested('StockSchema', only=["id", "catalog", "amount", "store"])
+
+
+class HoldItemSchema(ma.TableSchema):
+    class Meta:
+        table = HoldItem.__table__
+
+    store = fields.Nested('StoreSchema')
+    stock = fields.Nested('StockSchema', only=["id", "catalog", "amount"])
 
 

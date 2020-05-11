@@ -129,9 +129,8 @@ def add_user_to_store(store_id):
     user_model = User.query.get(data.get('user_id'))
     if not user_model:
         return jsonify(status="failed", message="User not Found!")
-    print(user_model)
+
     store_model.users.append(user_model)
-    print(store_model.users)
     db.session.commit()
 
     return jsonify(
