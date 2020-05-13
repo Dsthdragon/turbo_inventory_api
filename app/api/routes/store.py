@@ -138,3 +138,11 @@ def add_user_to_store(store_id):
         data=UserSchema(many=True).dump(store_model.users).data
     )
 
+
+@bp.route("/store/<int:store_id>/stock")
+def get_store_stocks(store_id):
+    stocks = Stock.query.filter_by(store_id=store_id).all()
+    stocks_schema = StockSchema(many=True).dump(stocks).data
+    return jsonify(status="success", message="Store Stocks Found", data=stocks_schema)
+
+
