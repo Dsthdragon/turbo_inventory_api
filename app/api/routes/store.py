@@ -108,7 +108,7 @@ def get_store_requests(store_id):
 @bp.route("/store/<int:store_id>/transactions")
 @login_required
 def get_store_transactions(store_id):
-    transactions = Transaction.query.filter(Stock.transactions.any(Store.id == store_id)).order_by(Transaction.created.desc()).all()
+    transactions = Transaction.query.join(Transaction.stock).filter(Stock.store_id == store_id).order_by(Transaction.created.desc()).all()
 
     return jsonify(
         status="success", message="Store Transactions",
