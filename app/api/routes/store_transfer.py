@@ -74,14 +74,19 @@ def create_store_transfer():
     store_transfer_model.status = 'pending'
 
     db.session.add(store_transfer_model)
-
+    items = []
     for item in data.get("items"):
+        if item.get("stock_id") in items:
+            return jsonify(status="failed", message="Cant make multi request for stock item!")
         stock_model = Stock.query.get(item.get("stock_id"))
         if not stock_model:
             return jsonify(status="failed", message="Stock Item not found!")
         if not item.get("amount"):
             return jsonify(status="failed", message="Amount Required found!")
-
+        if item.get("amount") > stock_model.amount:
+            return jsonify(status="failed", message="{}'s stock is insufficient!".format(stock_model.catalog.name))
+        
+        items.add(item.get("stock_id"))
         transfer_item_model = TransferItem()
         transfer_item_model.stock_id = stock_model.id
         transfer_item_model.amount = item.get("amount")
