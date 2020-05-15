@@ -86,7 +86,7 @@ def create_store_transfer():
         if item.get("amount") > stock_model.amount:
             return jsonify(status="failed", message="{}'s stock is insufficient!".format(stock_model.catalog.name))
         
-        items.add(item.get("stock_id"))
+        items.append(item.get("stock_id"))
         transfer_item_model = TransferItem()
         transfer_item_model.stock_id = stock_model.id
         transfer_item_model.amount = item.get("amount")
