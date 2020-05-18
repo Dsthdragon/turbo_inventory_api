@@ -141,7 +141,7 @@ def add_user_to_store(store_id):
 
 @bp.route("/store/<int:store_id>/users/delete", methods=['PUT'])
 @login_required
-def add_user_to_store(store_id):
+def delete_user_to_store(store_id):
     data = request.get_json()
 
     if data is None:
