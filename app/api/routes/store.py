@@ -139,6 +139,29 @@ def add_user_to_store(store_id):
     )
 
 
+@bp.route("/store/<int:store_id>/users/delete", methods=['PUT'])
+@login_required
+def add_user_to_store(store_id):
+    data = request.get_json()
+
+    if data is None:
+        return jsonify(status="failed", message="No Data Sent!")
+    store_model = Store.query.get(store_id)
+    if not store_model:
+        return jsonify(status="failed", message="Store not Found!")
+    user_model = User.query.get(data.get('user_id'))
+    if not user_model:
+        return jsonify(status="failed", message="User not Found!")
+
+    store_model.users.remove(user_model)
+    db.session.commit()
+
+    return jsonify(
+        status="success", message="User added to Store",
+        data=UserSchema(many=True).dump(store_model.users).data
+    )
+
+
 @bp.route("/store/<int:store_id>/stock")
 def get_store_stocks(store_id):
     stocks = Stock.query.filter_by(store_id=store_id).all()
