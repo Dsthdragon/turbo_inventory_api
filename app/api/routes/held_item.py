@@ -37,6 +37,7 @@ def create_hold_item():
     hold_item_model.store_id = store_model.id
     hold_item_model.stock_id = stock_model.store_id
     hold_item_model.reason = data.get('reason')
+    hold_item_model.amount = data.get('amount')
     hold_item_model.identity = data.get('identity')
     hold_item_model.in_store = True
 
