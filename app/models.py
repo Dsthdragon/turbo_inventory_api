@@ -300,6 +300,7 @@ class HoldItem(AuditableMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     stock_id = db.Column(db.Integer, db.ForeignKey("stock.id"), nullable=False)
     store_id = db.Column(db.Integer, db.ForeignKey("store.id"), nullable=False)
+    amount = db.Column(db.Float, default=1) 
     identity = db.Column(db.Text)
     reason = db.Column(db.Text)
     in_store = db.Column(db.Boolean)
